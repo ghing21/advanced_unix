@@ -1,0 +1,280 @@
+# i will put original code then changes and then github commands
+
+
+Copy exercise 9 from last week into your new repository and introduce an error in the exercise
+
+# exercise9.py
+
+def read_top10(filename):
+    top10 = []  # list of (score, line)
+
+    with open(filename, "r") as f:
+        for line in f:
+            parts = line.strip().split("\t")
+            acc = parts[0]
+            scores = list(map(float, parts[1:]))
+            combined = sum(scores)
+
+            # If we have fewer than 10 entries, just add it
+            if len(top10) < 10:
+                top10.append((combined, line.strip()))
+                continue
+
+            # Otherwise find the current minimum in top10
+            min_score = min(top10, key=lambda x: x[0])
+
+            # If the new score is better, replace the minimum
+            if combined > min_score[0]:
+                top10.remove(min_score)
+                top10.append((combined, line.strip()))
+
+    return top10
+
+
+def main():
+    top10 = read_top10("scores.txt")
+
+    # Sort final top10 before writing
+    top10.sort(reverse=True, key=lambda x: x[0])
+
+    with open("scoresextreme.txt", "w") as out:
+        for score, line in top10:
+            out.write(line + "\n")
+
+
+if __name__ == "__main__":
+    main()
+
+Exercise 1 — Copy exercise 9 and introduce an algorithm error
+# WRONG: should be >
+if combined < min_score[0]:
+    top10.remove(min_score)
+    top10.append((combined, line.strip()))
+
+git clone git@github.com:ghing21/Colaborative_git_unix.git repoA
+cp ../last_week/exercise9.py exercise9.py
+git add exercise9.py
+git commit -m "Add exercise 9 with intentional algorithm error"
+git push
+
+Exercise 2 — Switch repo, fix the error, push
+git clone git@github.com:ghing21/Colaborative_git_unix.git repoB
+nano exercise9.py   # fix the > / < logic
+git add exercise9.py
+git commit -m "Fix algorithm error in exercise 9"
+git push
+
+
+Exercise 3 — Create stat.py with option -c
+git add stat.py
+git commit -m "Add stat.py with -c option"
+git push
+
+Exercise 4 — Switch repo, add -a (average)
+git pull
+git add stat.py
+git commit -m "Add -a option and average()"
+git push
+
+Exercise 5 — Switch back, add -m (median)
+git pull
+git add stat.py
+git commit -m "Add -m option and median()"
+git push
+
+Exercise 6 — Branch collaboration: -n and -b
+git pull
+git add stat.py
+git commit -m "Add -n option and obs()"
+git push
+
+git checkout -b biggest-feature
+git add stat.py
+git commit -m "Add -b option and biggest()"
+git checkout main
+git pull
+git checkout biggest-feature
+git rebase main
+git checkout main
+git merge biggest-feature
+git push
+
+Exercise 7 — Coordinated collaboration: -t and trimmedmean()
+git pull
+git add stat.py
+git commit -m "Prepare -t option and placeholder trimmedmean()"
+git push
+
+git pull
+git add stat.py
+git commit -m "Implement trimmedmean()"
+git push
+
+Exercise 8 — Unplanned collaboration: conflict with -f
+git add stat.py
+git commit -m "Owner adds -f and frequent()"
+git push
+
+git add stat.py
+git commit -m "Partner adds -f and frequent()"
+git push   # rejected
+
+git log
+git revert <hash_of_owner_f_commit>
+git push
+
+git pull
+git push
+
+#!/usr/bin/env python3
+import sys
+
+# Option flags
+column = None
+do_average = False
+do_median = False
+do_count = False
+do_biggest = False
+do_trimmed = False
+do_frequent = False
+filename = None
+
+def usage(msg=None):
+    if msg:
+        print(msg, "\n")
+    print("Usage: stat.py [-c <positiveinteger>] [-a] [-m] [-n] [-b] [-t] [-f] <filename>")
+    sys.exit(1)
+
+def average(values):
+    if not values:
+        return None
+    return sum(values) / len(values)
+
+def median(values):
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    mid = n // 2
+    if n % 2 == 1:
+        return s[mid]
+    return (s[mid - 1] + s[mid]) / 2
+
+def obs(values):
+    return len(values)
+
+def biggest(values):
+    if not values:
+        return None
+    return max(values)
+
+def trimmedmean(values):
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    k = int(n * 0.05)
+    trimmed = s[k:n-k]
+    if not trimmed:
+        return None
+    return sum(trimmed) / len(trimmed)
+
+def frequent(values):
+    if not values:
+        return None
+    counts = {}
+    for v in values:
+        counts[v] = counts.get(v, 0) + 1
+    return max(counts, key=counts.get)
+
+# -------------------------
+# Command line parsing
+# -------------------------
+args = sys.argv[:]
+args.pop(0)
+
+while args:
+    arg = args.pop(0)
+
+    if arg == "-c":
+        if not args:
+            usage("Missing number after -c")
+        try:
+            column = int(args.pop(0))
+            if column < 1:
+                raise ValueError
+        except ValueError:
+            usage("Column number must be a positive integer")
+
+    elif arg == "-a":
+        do_average = True
+
+    elif arg == "-m":
+        do_median = True
+
+    elif arg == "-n":
+        do_count = True
+
+    elif arg == "-b":
+        do_biggest = True
+
+    elif arg == "-t":
+        do_trimmed = True
+
+    elif arg == "-f":
+        do_frequent = True
+
+    elif filename is None:
+        filename = arg
+
+    else:
+        usage("Unknown option or too many arguments")
+
+if filename is None:
+    usage("You must specify a filename")
+
+# -------------------------
+# Reading the file
+# -------------------------
+numbers = []
+
+try:
+    with open(filename, "r") as f:
+        for line in f:
+            parts = line.strip().split("\t")
+
+            if column is not None:
+                try:
+                    numbers.append(float(parts[column - 1]))
+                except:
+                    pass
+            else:
+                for p in parts:
+                    try:
+                        numbers.append(float(p))
+                    except:
+                        pass
+
+except FileNotFoundError:
+    usage(f"File not found: {filename}")
+
+# -------------------------
+# Print results
+# -------------------------
+if do_average:
+    print(average(numbers))
+
+if do_median:
+    print(median(numbers))
+
+if do_count:
+    print(obs(numbers))
+
+if do_biggest:
+    print(biggest(numbers))
+
+if do_trimmed:
+    print(trimmedmean(numbers))
+
+if do_frequent:
+    print(frequent(numbers))

@@ -1,0 +1,10 @@
+
+# exercise 9
+
+
+
+# example of intentional algorithm error
+if combined < min_score[0]:   # WRONG: should be >
+    top10.remove(min_score)
+    top10.append((combined, line.strip()))
+
